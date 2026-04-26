@@ -1,0 +1,45 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: langchoice-apps
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - app: langchoice-backend
+            path: langchoice-backend
+          - app: langchoice-frontend
+            path: langchoice-frontend
+
+  template:
+    metadata:
+      name: "{{app}}"
+      namespace: argocd
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: langchoice
+      source:
+        repoURL: https://github.com/iamridoydey/langchoice.git
+        targetRevision: HEAD
+        path: "{{path}}"
+        helm:
+          releaseName: "{{app}}"
+          valueFiles:
+            - values.yaml
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: langchoice
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+        retry:
+          limit: 3
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 3m
