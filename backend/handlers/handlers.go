@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/langchoice/backend/models"
-	"github.com/langchoice/backend/store"
+	"github.com/iamridoydey/langchoice/backend/models"
+	"github.com/iamridoydey/langchoice/backend/store"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
