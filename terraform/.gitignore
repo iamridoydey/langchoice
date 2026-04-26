@@ -1,0 +1,24 @@
+# Local .terraform directory (contains provider plugins and modules)
+.terraform/
+
+# .tfstate files (can contain secrets in plain text)
+*.tfstate
+*.tfstate.*
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Exclude all .tfvars files as they often contain secrets
+*.tfvars
+*.tfvars.json
+
+# Exclude override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Include override files for specific local development (optional)
+# .terraformrc
+# terraform.rc
