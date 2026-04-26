@@ -1,0 +1,6 @@
+- name: Jenkins Installation and Configuration
+  hosts: servers
+  become: true
+
+  roles:
+  - role: jenkins
