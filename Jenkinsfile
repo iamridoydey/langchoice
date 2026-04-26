@@ -23,11 +23,22 @@ pipeline {
     // ── 2. Detect changes ─────────────────────────────────────────────────
     // Only build what actually changed.
     // HEAD~1 compares current commit with previous commit.
-    stage('detect-changes') {
-      steps {
-        script {
+  stage('detect-changes') {
+    steps {
+      script {
+
+        // Check if build was triggered manually
+        def manualTrigger = currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause').size() > 0
+
+        if (manualTrigger) {
+          // Manual trigger — build everything
+          echo "Manual trigger detected — building all services"
+          env.BUILD_FRONTEND = 'true'
+          env.BUILD_BACKEND  = 'true'
+        } else {
+          // Webhook trigger — only build what changed
           def changedFiles = sh(
-            script: 'git diff --name-only HEAD~1 HEAD',
+            script: 'git diff --name-only HEAD~1 HEAD 2>/dev/null || git diff --name-only HEAD',
             returnStdout: true
           ).trim()
 
@@ -39,7 +50,6 @@ pipeline {
           echo "Build frontend : ${env.BUILD_FRONTEND}"
           echo "Build backend  : ${env.BUILD_BACKEND}"
 
-          // If nothing relevant changed, skip entire pipeline cleanly
           if (env.BUILD_FRONTEND == 'false' && env.BUILD_BACKEND == 'false') {
             currentBuild.result = 'NOT_BUILT'
             error('No application code changed — skipping build')
@@ -47,6 +57,7 @@ pipeline {
         }
       }
     }
+  }
 
     // ── 3. Commit hash ────────────────────────────────────────────────────
     // Tag images with both BUILD_ID and commit hash so any running
