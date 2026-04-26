@@ -2,28 +2,27 @@ pipeline {
   agent any
 
   environment {
-    FRONTEND_IMAGE   = 'iamridoydey/langchoice-frontend'
-    BACKEND_IMAGE    = 'iamridoydey/langchoice-backend'
-    VERSION          = "${BUILD_ID}"
-    MANIFEST_REPO    = 'https://github.com/iamridoydey/langchoice-manifests.git'
+    FRONTEND_IMAGE = 'iamridoydey/langchoice-frontend'
+    BACKEND_IMAGE  = 'iamridoydey/langchoice-backend'
+    VERSION        = "${BUILD_ID}"
   }
 
   stages {
 
-    // ── 1. Checkout app code ──────────────────────────────────────────────
+    // ── 1. Checkout ───────────────────────────────────────────────────────
     stage('checkout') {
       steps {
         git(
-          url: 'https://github.com/iamridoydey/langchoice.git',
-          credentialsId: 'github-creds',
-          branch: 'main'
+          url:           'https://github.com/iamridoydey/langchoice.git',
+          credentialsId: 'github-token',
+          branch:        'main'
         )
       }
     }
 
-    // ── 2. Detect which service changed ──────────────────────────────────
-    // Only build what actually changed — no point rebuilding frontend
-    // if only backend files were touched and vice versa.
+    // ── 2. Detect changes ─────────────────────────────────────────────────
+    // Only build what actually changed.
+    // HEAD~1 compares current commit with previous commit.
     stage('detect-changes') {
       steps {
         script {
@@ -39,13 +38,19 @@ pipeline {
 
           echo "Build frontend : ${env.BUILD_FRONTEND}"
           echo "Build backend  : ${env.BUILD_BACKEND}"
+
+          // If nothing relevant changed, skip entire pipeline cleanly
+          if (env.BUILD_FRONTEND == 'false' && env.BUILD_BACKEND == 'false') {
+            currentBuild.result = 'NOT_BUILT'
+            error('No application code changed — skipping build')
+          }
         }
       }
     }
 
-    // ── 3. Generate short commit hash ────────────────────────────────────
-    // We tag images with both BUILD_ID (sequential) and commit hash
-    // so that we can trace any running image back to the exact commit.
+    // ── 3. Commit hash ────────────────────────────────────────────────────
+    // Tag images with both BUILD_ID and commit hash so any running
+    // image can be traced back to the exact Git commit.
     stage('generate-commit-hash') {
       steps {
         script {
@@ -72,25 +77,23 @@ pipeline {
       }
     }
 
-    // ── 5. Build images (parallel, skips unchanged service) ───────────────
+    // ── 5. Build images (parallel) ────────────────────────────────────────
     stage('build-images') {
-      parallel {              
+      parallel {
 
         stage('build-frontend') {
           when {
             expression { env.BUILD_FRONTEND == 'true' }
           }
           steps {
-            script {
-              echo 'Building frontend image...'
-              sh """
-                docker build \
-                  -t ${env.FRONTEND_IMAGE}:${env.VERSION} \
-                  -t ${env.FRONTEND_IMAGE}:${env.COMMIT_HASH} \
-                  -t ${env.FRONTEND_IMAGE}:latest \
-                  ./frontend
-              """
-            }
+            echo 'Building frontend image...'
+            sh """
+              docker build \
+                -t ${FRONTEND_IMAGE}:${VERSION} \
+                -t ${FRONTEND_IMAGE}:${COMMIT_HASH} \
+                -t ${FRONTEND_IMAGE}:latest \
+                ./frontend
+            """
           }
         }
 
@@ -99,23 +102,21 @@ pipeline {
             expression { env.BUILD_BACKEND == 'true' }
           }
           steps {
-            script {
-              echo 'Building backend image...'
-              sh """
-                docker build \
-                  -t ${env.BACKEND_IMAGE}:${env.VERSION} \
-                  -t ${env.BACKEND_IMAGE}:${env.COMMIT_HASH} \
-                  -t ${env.BACKEND_IMAGE}:latest \
-                  ./backend
-              """
-            }
+            echo 'Building backend image...'
+            sh """
+              docker build \
+                -t ${BACKEND_IMAGE}:${VERSION} \
+                -t ${BACKEND_IMAGE}:${COMMIT_HASH} \
+                -t ${BACKEND_IMAGE}:latest \
+                ./backend
+            """
           }
         }
 
       }
     }
 
-    // ── 6. Push images (parallel, skips unchanged service) ────────────────
+    // ── 6. Push images (parallel) ─────────────────────────────────────────
     stage('push-images') {
       parallel {
 
@@ -124,12 +125,12 @@ pipeline {
             expression { env.BUILD_FRONTEND == 'true' }
           }
           steps {
-            script {
-              echo 'Pushing frontend image...'
-              sh "docker push ${env.FRONTEND_IMAGE}:${env.VERSION}"
-              sh "docker push ${env.FRONTEND_IMAGE}:${env.COMMIT_HASH}"
-              sh "docker push ${env.FRONTEND_IMAGE}:latest"
-            }
+            echo 'Pushing frontend image...'
+            sh """
+              docker push ${FRONTEND_IMAGE}:${VERSION}
+              docker push ${FRONTEND_IMAGE}:${COMMIT_HASH}
+              docker push ${FRONTEND_IMAGE}:latest
+            """
           }
         }
 
@@ -138,89 +139,111 @@ pipeline {
             expression { env.BUILD_BACKEND == 'true' }
           }
           steps {
-            script {
-              echo 'Pushing backend image...'
-              sh "docker push ${env.BACKEND_IMAGE}:${env.VERSION}"
-              sh "docker push ${env.BACKEND_IMAGE}:${env.COMMIT_HASH}"
-              sh "docker push ${env.BACKEND_IMAGE}:latest"
-            }
+            echo 'Pushing backend image...'
+            sh """
+              docker push ${BACKEND_IMAGE}:${VERSION}
+              docker push ${BACKEND_IMAGE}:${COMMIT_HASH}
+              docker push ${BACKEND_IMAGE}:latest
+            """
           }
         }
 
       }
     }
 
-    // ── 7. Update manifest repo so ArgoCD picks up the new tag ────────────
-    // Jenkins clones the separate manifest repo, edits values.yaml,
-    // and pushes the commit. ArgoCD polls this repo and syncs the
-    // new image tag to the cluster automatically.
-  stage('update-manifests') {
-    when {
-      expression { env.BUILD_FRONTEND == 'true' || env.BUILD_BACKEND == 'true' }
+    // ── 7. Update manifests ───────────────────────────────────────────────
+    // Jenkins updates values.yaml with the new image tag.
+    // ArgoCD polls the repo and syncs the new tag to the cluster.
+    //
+    // [skip ci] in the commit message prevents the CI loop:
+    //   → Jenkins webhook sees [skip ci] → skips triggering a new build
+    //   → ArgoCD sees the values.yaml change → syncs to cluster
+    stage('update-manifests') {
+      steps {
+        withCredentials([string(credentialsId: 'github-token', variable: 'GH_TOKEN')]) {
+          script {
+            // Extract to local Groovy vars first.
+            // Groovy env.VAR inside sh "" works for simple strings
+            // but shell conditionals need plain shell vars — assign them
+            // at the top of the sh block to avoid expansion issues.
+            def buildFrontend = env.BUILD_FRONTEND
+            def buildBackend  = env.BUILD_BACKEND
+            def commitHash    = env.COMMIT_HASH
+            def version       = env.VERSION
+
+            sh """
+              git config user.email "jenkins@langchoice.com"
+              git config user.name  "Jenkins"
+
+              # Authenticate push using GitHub personal access token
+              git remote set-url origin https://${GH_TOKEN}@github.com/iamridoydey/langchoice.git
+
+              # Pull latest to avoid push rejection if repo changed
+              git pull origin main --rebase
+
+              # ── Update frontend values.yaml ──────────────────────────
+              # Matches:  tag: "anything"
+              # Replaces: tag: "abc1234"
+              if [ "${buildFrontend}" = "true" ]; then
+                sed -i 's|tag: ".*"|tag: "${commitHash}"|' helm-charts/langchoice-frontend/values.yaml
+                git add helm-charts/langchoice-frontend/values.yaml
+                echo "Frontend tag updated to ${commitHash}"
+              fi
+
+              # ── Update backend values.yaml ───────────────────────────
+              if [ "${buildBackend}" = "true" ]; then
+                sed -i 's|tag: ".*"|tag: "${commitHash}"|' helm-charts/langchoice-backend/values.yaml
+                git add helm-charts/langchoice-backend/values.yaml
+                echo "Backend tag updated to ${commitHash}"
+              fi
+
+              # Only commit if there are staged changes
+              # git diff --cached --quiet exits 0 if nothing staged
+              if git diff --cached --quiet; then
+                echo "No manifest changes to commit — nothing to push"
+              else
+                # [skip ci] stops Jenkins from triggering on this commit
+                git commit -m "ci: update image tag to ${commitHash} [skip ci]"
+                git push origin main
+                echo "Manifests pushed successfully"
+              fi
+            """
+          }
+        }
+      }
     }
 
-  steps {
+  } // end stages
 
-    withCredentials([string(credentialsId: 'github-token', variable: 'GH_TOKEN')]) {
-      sh """
-        # Need to setup to push the code in the repo
-        git config user.email "jenkins@langchoice.com"
-        git config user.name  "Jenkins"
-
-        # Set the remote URL with token so we can push
-        git remote set-url origin https://${GH_TOKEN}@github.com/iamridoydey/langchoice.git
-
-        # Update frontend tag
-        if [ "${env.BUILD_FRONTEND}" = "true" ]; then
-          sed -i 's|tag: ".*" | tag: "${env.COMMIT_HASH}" |' helm-charts/langchioce-frontend/values.yaml
-          echo "Updated langchoice-frontend tag to build-${env.VERSION}"
-        fi
-
-        # Update backend tag
-        if [ "${env.BUILD_BACKEND}" = "true" ]; then
-          sed -i 's|tag: ".*" |tag: "${env.COMMIT_HASH}" |' helm-charts/langchioce-backend/values.yaml
-          echo "Updated langchoice-backend tag to ${env.COMMIT_HASH}"
-        fi
-
-        git add helm-charts/langchoice-frontend/values.yaml helm-charts/langchoice-backend/values.yaml
-        git commit -m "jenkins-ci: Update image tag to ${env.COMMIT_HASH}"
-        git push
-      """
-    }
-  }
-}
-  } // end stages  
-
-  // ── Post actions ─────────────────────────────────────────────────────────
+  // ── Post actions ──────────────────────────────────────────────────────────
   post {
 
     always {
-      echo "Build #${env.BUILD_ID} finished"
+      echo "Build #${BUILD_ID} finished"
 
-      // Remove local docker images to prevent disk fill-up on Jenkins EC2
-      // || true means: don't fail the pipeline if image doesn't exist
+      // Clean up local Docker images to prevent disk fill-up on Jenkins EC2
+      // COMMIT_HASH may be empty if pipeline failed before stage 3 — || true handles that
       sh """
-        docker rmi ${env.FRONTEND_IMAGE}:${env.VERSION}    || true
-        docker rmi ${env.FRONTEND_IMAGE}:${env.COMMIT_HASH} || true
-        docker rmi ${env.FRONTEND_IMAGE}:latest             || true
-        docker rmi ${env.BACKEND_IMAGE}:${env.VERSION}     || true
-        docker rmi ${env.BACKEND_IMAGE}:${env.COMMIT_HASH}  || true
-        docker rmi ${env.BACKEND_IMAGE}:latest              || true
-        docker logout                                        || true
+        docker rmi ${FRONTEND_IMAGE}:${VERSION}      || true
+        docker rmi ${FRONTEND_IMAGE}:${COMMIT_HASH}  || true
+        docker rmi ${FRONTEND_IMAGE}:latest          || true
+        docker rmi ${BACKEND_IMAGE}:${VERSION}       || true
+        docker rmi ${BACKEND_IMAGE}:${COMMIT_HASH}   || true
+        docker rmi ${BACKEND_IMAGE}:latest           || true
+        docker logout                                || true
       """
 
-      // Clean workspace — runs even on failure so disk doesn't fill up
+      // Clean workspace so leftover files don't affect the next build
       cleanWs()
     }
 
     success {
-      echo "Build #${env.BUILD_ID} succeeded. Image tags: ${env.VERSION} / ${env.COMMIT_HASH}"
+      echo "Build #${BUILD_ID} succeeded — tags: ${VERSION} / ${COMMIT_HASH}"
     }
 
     failure {
-      echo "Build #${env.BUILD_ID} failed. Check the logs above."
+      echo "Build #${BUILD_ID} failed — check logs above"
     }
 
   }
-
 }
