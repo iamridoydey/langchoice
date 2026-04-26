@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: langchoice-backend-cm
+data:
+  DB_NAME: {{ .Values.configmap_data.DB_NAME | quote }}
+  PORT: {{ .Values.configmap_data.PORT | quote }}
+  ALLOWED_ORIGINS: {{ .Values.configmap_data.ALLOWED_ORIGINS |  quote }}
+  VPC_CIDR: {{ .Values.configmap_data.VPC_CIDR | quote }}
