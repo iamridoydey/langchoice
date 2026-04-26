@@ -44,6 +44,11 @@ spec:
             - name: http
               containerPort: {{ .Values.service.port }}
               protocol: TCP
+
+          env:
+            - name: BACKEND_URL 
+              value: {{ Values.configmap_data.BACKEND_URL | quote }}
+              
           {{- with .Values.livenessProbe }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}
