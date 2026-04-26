@@ -70,9 +70,10 @@ variable "subnet_objects" {
   type = map(object(
     {
       cidr = string
+      az   = string
       tags = object(
         {
-          Name    = string
+          Name = string
           type = string
         }
       )
@@ -82,30 +83,34 @@ variable "subnet_objects" {
   default = {
     "public-1a" = {
       cidr = "10.0.1.0/24"
+      az   = "us-east-1a"
       tags = {
-        Name    = "public-1a-subnet"
+        Name = "public-1a-subnet"
         type = "public"
       }
     },
     "private-1a" = {
       cidr = "10.0.2.0/24"
+      az   = "us-east-1a"
       tags = {
-        Name    = "public-1b-subnet"
-        type = "public"
+        Name = "public-1b-subnet"
+        type = "private"
       }
     },
     "public-1b" = {
       cidr = "10.0.3.0/24"
+      az   = "us-east-1b"
       tags = {
-        Name    = "public-1c-subnet"
+        Name = "public-1c-subnet"
         type = "public"
       }
     },
     "private-1b" = {
       cidr = "10.0.4.0/24"
+      az   = "us-east-1b"
       tags = {
-        Name    = "public-1d-subnet"
-        type = "public"
+        Name = "public-1d-subnet"
+        type = "private"
       }
     }
   }

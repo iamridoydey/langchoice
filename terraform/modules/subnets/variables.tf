@@ -19,6 +19,7 @@ variable "subnet_objects" {
   description = "Subnet cidr values and names"
   type = map(object({
     cidr = string
+    az   = string
     tags = object({
       Name = string
       type = string

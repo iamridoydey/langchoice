@@ -111,7 +111,7 @@ locals {
 
 
   # Eks Addons list
-  eks_addons_list = ["vpc-cni", "kube-proxy", "coredns", "aws-ebs-csi-driver", "metrics-server", "aws-load-balancer-controller"]
+  eks_addons_list = ["vpc-cni", "kube-proxy", "coredns", "aws-ebs-csi-driver", "metrics-server"]
 }
 
 # Route table
@@ -140,10 +140,10 @@ module "ec2" {
       subnet_id       = module.subnets.public_subnet_ids[0]
       security_groups = module.sg.managed_security_group_ids
       ami             = data.aws_ami.ubuntu.id
-      instance_type   = "t3.micro"
+      instance_type   = "t3.small"
       key             = module.ec2.key_name
       assoc_public_ip = true
-      name            = "control-ubuntu"
+      name            = "jenkins-server"
       user            = "ubuntu"
       os_family       = "ubuntu"
       volume_size     = 15
@@ -156,8 +156,9 @@ module "ec2" {
 
 module "eks" {
   source = "./modules/eks"
-  aws_account_id = data.aws_caller_identity.current.account_id
+  aws_account_arn = data.aws_caller_identity.current.arn
   # Eks will be in private subnet
   subnet_ids_list = module.subnets.private_subnet_ids
   eks_addons_list = local.eks_addons_list
+  instance_types = ["m7i-flex.large"]
 }

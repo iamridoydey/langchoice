@@ -70,8 +70,8 @@ locals {
 
 resource "aws_subnet" "main" {
   for_each = var.subnet_objects
-
   vpc_id     = var.vpc_id
+  availability_zone = each.value.az
   cidr_block = each.value.cidr
   tags       = each.value.tags
 
