@@ -15,12 +15,12 @@ output "managed_sg" {
 
 output "aws_eks_arn" {
   description = "Eks cluster arn"
-  value       = module.eks.arn
+  value       = module.eks.aws_eks_arn
 }
 
 
 
 output "aws_eks_admin_entry" {
   description = "Eks cluster admin entry"
-  value       = module.eks.principal_arn
+  value       = module.eks.aws_eks_admin_entry_arn
 }

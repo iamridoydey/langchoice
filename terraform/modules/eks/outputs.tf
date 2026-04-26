@@ -5,7 +5,7 @@ output "aws_eks_arn" {
 
 
 
-output "aws_eks_admin_entry" {
+output "aws_eks_admin_entry_arn" {
   description = "Eks cluster admin entry"
   value       = aws_eks_access_entry.admin.principal_arn
 }

@@ -158,6 +158,6 @@ resource "aws_eks_access_policy_association" "admin" {
 ##########################################################################################
 resource "aws_eks_addon" "name" {
   count = length(var.eks_addons_list)
-  addon_name = eks_addons_list[count.index]
+  addon_name = var.eks_addons_list[count.index]
   cluster_name = aws_eks_cluster.langchoice_cluster.name
 }
