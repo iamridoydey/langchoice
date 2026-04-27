@@ -190,3 +190,4 @@ affinity: {}
 
 configmap_data:
   BACKEND_URL: "http://langchoice-backend.langchoice.svc.cluster.local:80"
+
