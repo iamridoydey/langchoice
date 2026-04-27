@@ -133,12 +133,12 @@ resources:
 # This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 livenessProbe:
   httpGet:
-    path: /health
-    port: http
+    path: /api/health
+    port: 5000
 readinessProbe:
   httpGet:
-    path: /health
-    port: http
+    path: /api/health
+    port: 5000
 
 # This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
 autoscaling:
@@ -171,9 +171,10 @@ affinity: {}
 # Backend configmap
 configmap_data:
   DB_NAME: "langchoice"
-  PORT: "5000"
-  ALLOWED_ORIGINS: ""
+  PORT: 5000
+  ALLOWED_ORIGINS: "http://k8s-langchoi-langchoi-d933b5d1d0-7a510b87192d0bb9.elb.us-east-1.amazonaws.com"
   VPC_CIDR: "10.0.0.0/16" #From your terraform output or decleare this to your terraform
+
 
 # Storage class
 storageClass:

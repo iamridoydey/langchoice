@@ -46,15 +46,32 @@ spec:
               protocol: TCP
           env:
             # Environment variables
+            # from configmap
+            env:
             - name: DB_NAME
-              value: {{ .Values.configmap_data.DB_NAME | quote }}
+              valueFrom:
+                configMapKeyRef:
+                  name: langchoice-backend-cm
+                  key: DB_NAME
 
             - name: PORT
-              value: {{ .Values.configmap_data.PORT | quote }}
+              valueFrom:
+                configMapKeyRef:
+                  name: langchoice-backend-cm
+                  key: PORT
 
             - name: ALLOWED_ORIGINS
-              value: {{ .Values.configmap_data.ALLOWED_ORIGINS | quote }}
-            
+              valueFrom:
+                configMapKeyRef:
+                  name: langchoice-backend-cm
+                  key: ALLOWED_ORIGINS
+
+            - name: VPC_CIDR
+              valueFrom:
+                configMapKeyRef:
+                  name: langchoice-backend-cm
+                  key: VPC_CIDR
+
             - name: MONGODB_USERNAME
               valueFrom: 
                 secretKeyRef:
