@@ -47,7 +47,6 @@ spec:
           env:
             # Environment variables
             # from configmap
-            env:
             - name: DB_NAME
               valueFrom:
                 configMapKeyRef:
@@ -85,7 +84,7 @@ spec:
                   key: mongodb-password
               
             - name: MONGODB_URI
-              value: "mongodb://$(MONGODB_USERNAME):$(MONGODB_PASSWORD)@{{ .Release.Name }}-mongodb:27017/$(MONGODB_DATABASE)?authSource=$(MONGODB_DATABASE)"
+              value: "mongodb://$(MONGODB_USERNAME):$(MONGODB_PASSWORD)@{{ .Release.Name }}-mongodb:27017/$(DB_NAME)?authSource=admin"
 
           {{- with .Values.livenessProbe }}
           livenessProbe:
