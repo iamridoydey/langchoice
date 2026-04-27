@@ -50,7 +50,7 @@ spec:
               valueFrom:
                 configMapKeyRef:
                   name: langchoice-frontend-cm
-                  value: {{ .Values.configmap_data.BACKEND_URL | quote }}
+                  key: BACKEND_URL
               
           {{- with .Values.livenessProbe }}
           livenessProbe:
