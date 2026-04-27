@@ -70,7 +70,8 @@ ingress:
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
     alb.ingress.kubernetes.io/ssl-redirect: '443'
 
-    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-2:261358761470:certificate/6ab64476-8f23-4030-a291-4e8d6a3dcb35
+    # ← make sure this certificate is in same region as your cluster
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:261358761470:certificate/6ab64476-8f23-4030-a291-4e8d6a3dcb35
 
     alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
     alb.ingress.kubernetes.io/healthcheck-path: /
@@ -88,15 +89,11 @@ ingress:
           pathType: Prefix
           backend:
             service:
-              name: frontend-service
+              name: langchoice-frontend  
               port:
-                number: 3000
+                number: 80
 
   tls: []
-    # - secretName: chart-example-tls
-    #   hosts:
-    #     - chart-example.local
-
 # -- Expose the service via gateway-api HTTPRoute
 # Requires Gateway API resources and suitable controller installed within the cluster
 # (see: https://gateway-api.sigs.k8s.io/guides/)
