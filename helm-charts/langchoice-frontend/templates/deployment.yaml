@@ -47,7 +47,10 @@ spec:
 
           env:
             - name: BACKEND_URL 
-              value: {{ .Values.configmap_data.BACKEND_URL | quote }}
+              valueFrom:
+                configMapKeyRef:
+                  name: langchoice-frontend-cm
+                  value: {{ .Values.configmap_data.BACKEND_URL | quote }}
               
           {{- with .Values.livenessProbe }}
           livenessProbe:
