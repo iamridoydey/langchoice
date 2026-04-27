@@ -1,7 +1,7 @@
 # ─────────────────────────────────────────────
 # Stage 1 — Builder
 # ─────────────────────────────────────────────
-FROM golang:1.25.1-alpine AS builder
+FROM golang:1.26-alpine AS builder
 
 RUN apk add --no-cache git ca-certificates tzdata
 
@@ -30,6 +30,6 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=builder /app/langchoice-backend /langchoice-backend
 
-EXPOSE 8080
+EXPOSE 5000
 
 ENTRYPOINT ["/langchoice-backend"]
