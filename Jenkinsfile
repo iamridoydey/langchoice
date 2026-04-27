@@ -14,7 +14,7 @@ pipeline {
       steps {
         git(
           url:           'https://github.com/iamridoydey/langchoice.git',
-          credentialsId: 'github-token',
+          credentialsId: 'github-cred',
           branch:        'main'
         )
       }
@@ -77,12 +77,11 @@ pipeline {
     // ── 4. DockerHub login ────────────────────────────────────────────────
     stage('dockerhub-login') {
       steps {
-        withCredentials([usernamePassword(
-          credentialsId: 'dockerhub',
-          usernameVariable: 'DOCKERHUB_USER',
-          passwordVariable: 'DOCKERHUB_PASS'
+        withCredentials([string(
+          credentialsId: 'dockerhub-token',
+          variable: 'DOCKERHUB_TOKEN'
         )]) {
-          sh 'echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin'
+          sh 'echo "$DOCKERHUB_TOKEN" | docker login -u iamridoydey --password-stdin'
         }
         echo 'DockerHub login successful'
       }
