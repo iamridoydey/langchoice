@@ -181,7 +181,10 @@ mongodb:
   auth:
     enabled: true
     existingSecret: mongodb-secret
-    database: langchoice
+    usernames:
+      - "langchoice" 
+    databases:
+      - "langchoice"      
 
   persistence:
     enabled: true
