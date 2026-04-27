@@ -67,12 +67,16 @@ ingress:
     alb.ingress.kubernetes.io/load-balancer-name: langchoice-alb
     alb.ingress.kubernetes.io/target-type: ip
 
+    # Allow both HTTP and HTTPS listeners
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
+
+    # Disable forced SSL redirect until you own a domain
     alb.ingress.kubernetes.io/ssl-redirect: 'false'
 
-    # ← make sure this certificate is in same region as your cluster
+    # Certificate can stay, but won’t be used until you map a domain
     alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:261358761470:certificate/6ab64476-8f23-4030-a291-4e8d6a3dcb35
 
+    # Health check: broaden success codes so redirects are considered healthy
     alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
     alb.ingress.kubernetes.io/healthcheck-path: /
     alb.ingress.kubernetes.io/healthcheck-port: traffic-port
@@ -83,13 +87,13 @@ ingress:
     alb.ingress.kubernetes.io/success-codes: 200-399
 
   hosts:
-    - host: langchoice.com
+    - host: langchoice-alb   # temporary placeholder, matches ALB DNS
       paths:
         - path: /
           pathType: Prefix
           backend:
             service:
-              name: langchoice-frontend  
+              name: langchoice-frontend
               port:
                 number: 80
 
