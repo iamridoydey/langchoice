@@ -1,0 +1,62 @@
+# SPDX-License-Identifier: MIT-0
+---
+# tasks file for roles/docker
+
+- name: Import and Setup Other Tasks
+  include_tasks: "{{ ansible_distribution | lower }}_spec_tasks.yml"
+
+- name: Ensure Docker service is running
+  service:
+    name: docker
+    state: started
+    enabled: yes
+  become: true
+  notify: Start Docker
+
+- name: Wait for Docker socket
+  wait_for:
+    path: /var/run/docker.sock
+    timeout: 30
+  become: true
+
+# Ensure Jenkins user has Docker access
+- name: Add Jenkins and other users to docker group
+  user:
+    name: "{{ item }}"
+    groups:
+      - docker
+    append: yes
+  loop: "{{ (docker_users | default([])) + ['jenkins'] }}"
+  become: true
+  notify:
+    - Restart Docker
+    - Restart Jenkins
+
+# Enable BuildKit globally
+- name: Enable BuildKit in environment
+  lineinfile:
+    path: /etc/environment
+    regexp: '^DOCKER_BUILDKIT='
+    line: 'DOCKER_BUILDKIT=1'
+    create: yes
+  become: true
+
+- name: Verify Docker is Running
+  command: docker --version
+  changed_when: false
+  register: docker_version
+
+- name: Log Docker Version
+  debug:
+    msg: "Docker version: {{ docker_version.stdout }}"
+
+- name: List running containers
+  command: docker ps
+  register: docker_ps_output
+  become: true
+  changed_when: false
+  failed_when: false
+
+- name: Display running containers
+  debug:
+    msg: "Running containers: {{ docker_ps_output.stdout_lines | default(['None']) }}"

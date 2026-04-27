@@ -1,0 +1,46 @@
+# Amazon Linux 2023
+- name: Update all packages on Amazon Linux 2023
+  dnf:
+    name: "*"
+    state: latest
+    update_cache: yes
+    use_backend: dnf5
+  become: true
+  when:
+    - ansible_distribution == "Amazon"
+    - ansible_distribution_major_version == "2023"
+
+- name: Install Docker on Amazon Linux 2023
+  dnf:
+    name: docker
+    state: present
+    use_backend: dnf5
+  become: true
+  when:
+    - ansible_distribution == "Amazon"
+    - ansible_distribution_major_version == "2023"
+
+
+# Update and install on Amazon Linux 2
+- name: Update all packages on Amazon Linux 2
+  command: yum update -y
+  become: true
+  register: yum_update
+  changed_when: "'Nothing to do' not in yum_update.stdout"
+  when:
+    - ansible_distribution == "Amazon"
+    - ansible_distribution_major_version == "2"
+
+- name: Enable Docker via amazon-linux-extras
+  command: amazon-linux-extras enable docker
+  become: true
+  when:
+    - ansible_distribution == "Amazon"
+    - ansible_distribution_major_version == "2"
+
+- name: Install Docker on Amazon Linux 2
+  command: yum install -y docker
+  become: true
+  when:
+    - ansible_distribution == "Amazon"
+    - ansible_distribution_major_version == "2"

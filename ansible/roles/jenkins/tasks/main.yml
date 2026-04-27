@@ -1,89 +1,102 @@
-#SPDX-License-Identifier: MIT-0
 ---
 # tasks file for roles/jenkins
 
 # -------------------------
-# Install Java
+# Install Java 21
 # -------------------------
-- name: Install Java on Ubuntu
+- name: Install Java 21 on Ubuntu/Debian
   apt:
-    name: openjdk-17-jdk
+    name: openjdk-21-jdk
     state: present
     update_cache: yes
+  become: true
   when: ansible_os_family == "Debian"
 
-- name: Install Java on RHEL / Amazon
+- name: Install Java 21 on RHEL/Amazon
   dnf:
-    name: java-17-openjdk
+    name: java-21-openjdk
     state: present
+  become: true
   when: ansible_os_family == "RedHat"
 
-# -------------------------
-# Jenkins repo (Ubuntu)
-# -------------------------
-- name: Add Jenkins key (Ubuntu)
-  get_url:
-    url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
-    dest: /usr/share/keyrings/jenkins-keyring.asc
+
+- name: Add Jenkins GPG key (2026)
+  shell: |
+    curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key \
+      | tee /usr/share/keyrings/jenkins-keyring.asc > /dev/null
+  args:
+    creates: /usr/share/keyrings/jenkins-keyring.asc
+  become: true
   when: ansible_os_family == "Debian"
 
-- name: Add Jenkins repo (Ubuntu)
-  apt_repository:
-    repo: "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/"
-    state: present
+- name: Add Jenkins apt repository
+  copy:
+    dest: /etc/apt/sources.list.d/jenkins.list
+    content: "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/"
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  when: ansible_os_family == "Debian"
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+  become: true
   when: ansible_os_family == "Debian"
 
 # -------------------------
 # Jenkins repo (RHEL/Amazon)
 # -------------------------
-- name: Add Jenkins repo (RHEL/Amazon)
+- name: Add Jenkins repo
   get_url:
     url: https://pkg.jenkins.io/redhat-stable/jenkins.repo
     dest: /etc/yum.repos.d/jenkins.repo
+  become: true
   when: ansible_os_family == "RedHat"
 
-- name: Import Jenkins key (RHEL/Amazon)
+- name: Import Jenkins GPG key (2026)
   rpm_key:
-    key: https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+    key: https://pkg.jenkins.io/redhat-stable/jenkins.io-2026.key
     state: present
+  become: true
   when: ansible_os_family == "RedHat"
 
 # -------------------------
 # Install Jenkins
 # -------------------------
-- name: Install Jenkins (Ubuntu)
+- name: Install Jenkins on Ubuntu/Debian
   apt:
     name: jenkins
     state: present
     update_cache: yes
+  become: true
   when: ansible_os_family == "Debian"
   notify: Restart Jenkins
 
-- name: Install Jenkins (RHEL/Amazon)
+- name: Install Jenkins on RHEL/Amazon
   dnf:
     name: jenkins
     state: present
+  become: true
   when: ansible_os_family == "RedHat"
   notify: Restart Jenkins
 
-# -------------------------
-# Start Jenkins
-# -------------------------
-- name: Start Jenkins
-  systemd_service:
+
+- name: Fix Jenkins directories ownership
+  file:
+    path: "{{ item }}"
+    owner: jenkins
+    group: jenkins
+    recurse: yes
+  loop:
+    - /var/lib/jenkins
+    - /var/log/jenkins
+  become: true
+
+- name: Ensure Jenkins is running
+  systemd:
     name: jenkins
     state: started
     enabled: yes
   become: true
-
-# -------------------------
-# Verify Jenkins version
-# -------------------------
-- name: Get Jenkins version
-  ansible.builtin.command: java -jar /usr/lib/jenkins/jenkins.war --version
-  register: jenkins_version
-  changed_when: false
-
-- name: Print Jenkins version
-  ansible.builtin.debug:
-    var: jenkins_version.stdout

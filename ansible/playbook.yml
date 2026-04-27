@@ -4,3 +4,4 @@
 
   roles:
   - role: jenkins
+  - role: docker

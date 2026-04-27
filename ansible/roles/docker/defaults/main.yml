@@ -1,0 +1,5 @@
+#SPDX-License-Identifier: MIT-0
+---
+# defaults file for roles/docker
+docker_users: []
+enabled_docker: false 

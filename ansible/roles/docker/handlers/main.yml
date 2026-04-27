@@ -1,0 +1,23 @@
+#SPDX-License-Identifier: MIT-0
+---
+# handlers file for roles/docker
+- name: Restart Docker
+  systemd:
+    name: docker
+    state: restarted
+    daemon_reload: yes
+  become: true
+
+- name: Start Docker
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+  become: true
+
+- name: Restart Jenkins
+  systemd:
+    name: jenkins
+    state: started
+    enabled: yes
+  become: true
