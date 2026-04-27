@@ -61,7 +61,4 @@ USER nextjs
 
 EXPOSE 3000
 
-# dumb-init runs as PID 1 and forwards signals (SIGTERM etc.) to Node,
-# so the pod shuts down cleanly on kubectl rollout / scale down.
-ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "server.js"]
