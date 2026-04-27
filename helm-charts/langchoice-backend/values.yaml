@@ -175,6 +175,11 @@ configmap_data:
   ALLOWED_ORIGINS: ""
   VPC_CIDR: "10.0.0.0/16" #From your terraform output or decleare this to your terraform
 
+# Storage class
+storageClass:
+  create: true
+  name: gp3
+
 # Mongodb values
 mongodb:
   architecture: "standalone"
