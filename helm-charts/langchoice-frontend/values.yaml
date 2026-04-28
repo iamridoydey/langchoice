@@ -59,6 +59,7 @@ service:
 
 
 # This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
+# values.yaml
 ingress:
   enabled: true
   className: "alb"
@@ -66,7 +67,7 @@ ingress:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/load-balancer-name: langchoice-alb
     alb.ingress.kubernetes.io/target-type: ip
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}'
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'    # ← fixed bracket
     alb.ingress.kubernetes.io/ssl-redirect: 'false'
     alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:261358761470:certificate/6ab64476-8f23-4030-a291-4e8d6a3dcb35
     alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
@@ -78,16 +79,11 @@ ingress:
     alb.ingress.kubernetes.io/unhealthy-threshold-count: '2'
     alb.ingress.kubernetes.io/success-codes: '200'
 
-  # hosts:
-  #   - host: ""              # ← empty string means match ALL hosts (no domain needed)
-    paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: langchoice-frontend
-            port:
-              number: 80
+  hosts:
+    - host: ""   
+      paths:
+        - path: /
+          pathType: Prefix
 
   tls: []
 # -- Expose the service via gateway-api HTTPRoute
