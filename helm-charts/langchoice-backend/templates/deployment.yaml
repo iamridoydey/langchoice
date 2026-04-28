@@ -82,9 +82,15 @@ spec:
                 secretKeyRef:
                   name: mongodb-secret
                   key: mongodb-password
-              
+                  
+            - name: MONGODB_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secret
+                  key: mongodb-database
+
             - name: MONGODB_URI
-              value: "mongodb://$(MONGODB_USERNAME):$(MONGODB_PASSWORD)@{{ .Release.Name }}-mongodb:27017/$(DB_NAME)?authSource=admin"
+              value: "mongodb://$(MONGODB_USERNAME):$(MONGODB_PASSWORD)@{{ .Release.Name }}-mongodb:27017/$(MONGODB_DATABASE)?authSource=$(MONGODB_DATABASE)"
 
           {{- with .Values.livenessProbe }}
           livenessProbe:

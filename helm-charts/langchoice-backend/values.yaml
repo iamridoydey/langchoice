@@ -186,11 +186,12 @@ mongodb:
   architecture: "standalone"
   auth:
     enabled: true
-    existingSecret: mongodb-secret
+    existingSecret: "mongodb-secret"
     usernames:
-      - "langchoice"
+      - "langchoice"       
     databases:
-      - "langchoice"
+      - "langchoice" 
+
 
   persistence:
     enabled: true
