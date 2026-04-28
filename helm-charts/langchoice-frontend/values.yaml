@@ -67,8 +67,8 @@ ingress:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/load-balancer-name: langchoice-alb
     alb.ingress.kubernetes.io/target-type: ip
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'    # ← fixed bracket
-    alb.ingress.kubernetes.io/ssl-redirect: 'false'
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'  
+    # alb.ingress.kubernetes.io/ssl-redirect: 'false'
     alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:261358761470:certificate/6ab64476-8f23-4030-a291-4e8d6a3dcb35
     alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
     alb.ingress.kubernetes.io/healthcheck-path: /
