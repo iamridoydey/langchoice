@@ -51,6 +51,7 @@ locals {
   sg_rules = [
     {
       name = "jenkins-server-sg"
+      type = "public"
       rules = [
         {
           traffic_type = "ingress"
@@ -76,6 +77,15 @@ locals {
           to_port      = 443
           cidr_blocks  = ["0.0.0.0/0"]
         },
+        # Jenkins ingress
+        {
+          traffic_type = "ingress"
+          description  = "Allow HTTP Access"
+          protocol     = "tcp"
+          from_port    = 8080
+          to_port      = 8080
+          cidr_blocks  = ["0.0.0.0/0"]
+        },
         {
           traffic_type = "egress"
           description  = "Allow all outbound"
@@ -88,6 +98,7 @@ locals {
     },
     {
       name = "eks-cluseter-sg"
+      type = "private"
       rules = [
         {
           traffic_type = "ingress"
@@ -138,9 +149,9 @@ module "ec2" {
   ec2_instance_data = {
     "jenkins-server" = {
       subnet_id       = module.subnets.public_subnet_ids[0]
-      security_groups = module.sg.managed_security_group_ids
+      security_groups = module.sg.public_security_group_ids
       ami             = data.aws_ami.ubuntu.id
-      instance_type   = "t3.small"
+      instance_type   = "c7i-flex.large"
       key             = module.ec2.key_name
       assoc_public_ip = true
       name            = "jenkins-server"

@@ -4,18 +4,18 @@ output "sg_ids" {
 }
 
 
-output "control_security_group_ids" {
-  description = "Control security group ids"
+output "public_security_group_ids" {
+  description = "Public security group ids"
   value = toset([
     for v in aws_security_group.security_groups : v.id
-    if length(regexall("control", v.name)) > 0
+    if length(regexall("public", v.tags["type"])) > 0
   ])
 }
 
-output "managed_security_group_ids" {
-  description = "Managed security group ids"
+output "private_security_group_ids" {
+  description = "Private security group ids"
   value = toset([
     for v in aws_security_group.security_groups : v.id
-    if length(regexall("managed", v.name)) > 0
+    if length(regexall("private", v.tags["type"])) > 0
   ])
 }

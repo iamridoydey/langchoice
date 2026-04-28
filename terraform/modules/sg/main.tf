@@ -3,6 +3,7 @@ resource "aws_security_group" "security_groups" {
   name     = each.value.name
   vpc_id   = var.vpc_id
 
+
   dynamic "ingress" {
     for_each = [for r in each.value.rules : r if r.traffic_type == "ingress"]
     content {
@@ -11,6 +12,7 @@ resource "aws_security_group" "security_groups" {
       from_port   = ingress.value.from_port
       to_port     = ingress.value.to_port
       cidr_blocks = ingress.value.cidr_blocks
+
     }
   }
 
@@ -27,5 +29,6 @@ resource "aws_security_group" "security_groups" {
 
   tags = {
     Name = each.value.name
+    type = each.value.type
   }
 }

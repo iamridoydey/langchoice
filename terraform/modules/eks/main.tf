@@ -219,6 +219,57 @@ resource "aws_iam_role_policy_attachment" "aws_load_balancer_controller" {
   role       = aws_iam_role.aws_load_balancer_controller.name
 }
 
+# modules/eks/main.tf
+
+##########################################################################################
+#                        IRSA — External Secrets                                         #
+##########################################################################################
+
+resource "aws_iam_role" "external_secrets" {
+  name = "langchoice-external-secrets-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = "sts:AssumeRoleWithWebIdentity"
+      Principal = {
+        Federated = aws_iam_openid_connect_provider.eks.arn
+      }
+      Condition = {
+        StringEquals = {
+          "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:sub" = "system:serviceaccount:external-secrets:external-secrets"
+          "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:aud" = "sts.amazonaws.com"
+        }
+      }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "external_secrets" {
+  policy_arn = aws_iam_policy.external_secrets.arn
+  role       = aws_iam_role.external_secrets.name
+}
+
+resource "aws_iam_policy" "external_secrets" {
+  name        = "langchoice-external-secrets-policy"
+  description = "Allows External Secrets to read from AWS Secrets Manager"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret"
+      ]
+      Resource = "arn:aws:secretsmanager:us-east-1:756822825463:secret:*"
+    }]
+  })
+}
+
+
+
 ##########################################################################################
 #                                       Addons                                           #
 ##########################################################################################
