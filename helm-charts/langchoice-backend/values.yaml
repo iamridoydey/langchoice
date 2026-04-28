@@ -172,7 +172,7 @@ affinity: {}
 configmap_data:
   DB_NAME: "langchoice"
   PORT: 5000
-  ALLOWED_ORIGINS: "http://k8s-langchoi-langchoi-d933b5d1d0-7a510b87192d0bb9.elb.us-east-1.amazonaws.com"
+  ALLOWED_ORIGINS: "http://langchoice-alb-477208657.us-east-1.elb.amazonaws.com"
   VPC_CIDR: "10.0.0.0/16" #From your terraform output or decleare this to your terraform
 
 
