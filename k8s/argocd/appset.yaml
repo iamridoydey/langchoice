@@ -8,9 +8,9 @@ spec:
     - list:
         elements:
           - app: langchoice-backend
-            path: langchoice-backend
+            path: helm-charts/langchoice-backend
           - app: langchoice-frontend
-            path: langchoice-frontend
+            path: helm-charts/langchoice-frontend
 
   template:
     metadata:
@@ -19,7 +19,7 @@ spec:
       finalizers:
         - resources-finalizer.argocd.argoproj.io
     spec:
-      project: langchoice
+      project: default
       source:
         repoURL: https://github.com/iamridoydey/langchoice.git
         targetRevision: HEAD
