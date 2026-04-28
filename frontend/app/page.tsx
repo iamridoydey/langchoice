@@ -295,7 +295,7 @@ export default function Home() {
           }}
         >
           <span>langchoice · community poll</span>
-          <span>next.js 16 · go gin · aws documentdb</span>
+          <span>next.js 16 · go gin · mongodb · eks · jenkins · argocd </span>
         </div>
       </footer>
 
