@@ -29,8 +29,8 @@
   loop: "{{ (docker_users | default([])) + ['jenkins'] }}"
   become: true
   notify:
-    - Restart Docker
     - Restart Jenkins
+    - Restart Docker
 
 # Enable BuildKit globally
 - name: Enable BuildKit in environment
