@@ -1,36 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frontend — Next.js App
 
-## Getting Started
+The LangChoice frontend is a Next.js 16 app with App Router. It shows a grid of programming languages, lets users cast a vote with a username and reason, and shows a live leaderboard.
 
-First, run the development server:
+## Tech
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Next.js 16.2 with App Router
+- React 19
+- Tailwind CSS v4
+- TypeScript
+
+## Structure
+
+```
+frontend/
+├── app/
+│   ├── api/
+│   │   └── [...path]/
+│   │       └── route.ts    Runtime API proxy — reads BACKEND_URL at request time
+│   ├── globals.css          Global styles + CSS variables + keyframes
+│   ├── layout.tsx           Root layout — fonts, metadata
+│   └── page.tsx             Main page — nav, hero, tab switcher
+├── components/
+│   ├── LanguageGrid.tsx     Card grid of languages with vote bars
+│   ├── Leaderboard.tsx      Ranked list with progress bars
+│   └── VoteModal.tsx        Modal — username + comment form
+├── lib/
+│   ├── api.ts               API client functions (getLanguages, castVote, etc.)
+│   └── types.ts             TypeScript interfaces
+├── Dockerfile               3-stage build: deps → builder → runner
+└── next.config.ts           output: standalone only
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Running locally
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# Install dependencies
+npm install
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Create local env file
+echo 'BACKEND_URL="http://localhost:5000"' > .env.local
 
-## Learn More
+# Start dev server
+npm run dev
+# App runs on http://localhost:3000
+```
 
-To learn more about Next.js, take a look at the following resources:
+Make sure the backend is also running on `:5000`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Environment variables
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Variable | Description |
+|---|---|
+| `BACKEND_URL` | Backend service URL — read at **runtime**, not build time |
 
-## Deploy on Vercel
+Never commit `.env.local`. It is already in `.gitignore`. In Kubernetes this value comes from a ConfigMap.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## How the API proxy works
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The frontend never calls the backend directly from the browser. Instead:
+
+1. Browser calls `/api/languages` (same origin)
+2. Next.js server receives the request at `app/api/[...path]/route.ts`
+3. Route handler reads `process.env.BACKEND_URL` at request time
+4. Forwards the request to `BACKEND_URL/api/languages`
+5. Returns the response to the browser
+
+This means the same Docker image works in every environment. You change `BACKEND_URL` in the ConfigMap and restart the pod — no rebuild needed.
+
+This approach was chosen because `next.config.ts` rewrites run at **build time** — the destination URL gets compiled into `server.js` and cannot be changed at runtime.
+
+## Docker build
+
+```bash
+docker build -t langchoice-frontend .
+docker run -p 3000:3000 \
+  -e BACKEND_URL=http://localhost:5000 \
+  langchoice-frontend
+```
+
+The Dockerfile has three stages. Stage 1 (`deps`) installs npm dependencies — this layer is cached and skipped on subsequent builds unless `package.json` changes. Stage 2 (`builder`) copies source and runs `npm run build`. Stage 3 (`runner`) copies only the `.next/standalone` output, `.next/static`, and `public/` — the final image is around 180MB instead of 1GB+.
+
+
+## Key design decisions
+
+**No `NEXT_PUBLIC_*` variables** — these get baked into the bundle at build time. Using a server-side route handler instead lets the backend URL be injected at runtime from a ConfigMap.
+
+**`output: standalone`** — Next.js standalone mode bundles the Node server with minimal dependencies, making the Docker image significantly smaller.
