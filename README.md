@@ -14,6 +14,8 @@ The real purpose of this project is not the app itself — it is to learn and pr
 
 ## Architecture Diagram
 
+![Langchoice Architectural Diagram](./diagrams/langchoice-diagram.png)
+
 ```
 Developer
     │
